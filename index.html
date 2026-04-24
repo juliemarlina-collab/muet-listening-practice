@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>🎧 MUET Smart Listening</title>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#071126;--ink:#0b1530;--card:#101c3a;--yellow:#FFD84D;--gold:#FFB800;--white:#fff;--muted:#b8c4de;--green:#22c55e;--red:#ef4444;--line:rgba(255,255,255,.13);--blue:#60a5fa}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Comfortaa',Arial,sans-serif;background:radial-gradient(circle at top left,#182a5d 0,#071126 42%,#050916 100%);color:#fff;min-height:100vh}
+.wrap{max-width:900px;margin:auto;padding:12px 12px 70px}
+
+/* ── Hero Header (SmartReading-style) ── */
+.hero{background:linear-gradient(135deg,var(--yellow) 0%,var(--gold) 100%);border-radius:24px;padding:22px 20px 18px;margin-bottom:14px;color:#1a1000}
+.hero-icon{font-size:32px;margin-bottom:6px;display:block}
+.hero-title{font-size:clamp(22px,7vw,32px);font-weight:900;line-height:1.15;margin:0 0 6px}
+.hero-sub{font-size:13px;font-weight:600;opacity:.75;line-height:1.4;margin:0 0 14px}
+.hero-hint{background:rgba(0,0,0,.12);border-radius:14px;padding:10px 13px;font-size:12px;font-weight:700;line-height:1.5;margin-bottom:14px}
+.sess-cards{display:flex;flex-direction:column;gap:10px}
+.sess-card{display:flex;align-items:center;gap:12px;border-radius:16px;padding:13px 16px;font-family:inherit;font-weight:900;cursor:pointer;font-size:14px;transition:all .18s;text-align:left;width:100%;border:2px solid rgba(0,0,0,.18);background:rgba(255,255,255,.22);color:#1a1000}
+.sess-card.active{background:#1a1000;color:var(--yellow);border-color:#1a1000}
+.sess-card .sc-icon{font-size:20px;flex-shrink:0}
+.sess-card .sc-body{flex:1;min-width:0}
+.sess-card .sc-title{font-size:15px;font-weight:900;display:block}
+.sess-card .sc-meta{font-size:11px;font-weight:700;opacity:.7;display:block;margin-top:2px}
+.sess-card .sc-prog{font-size:10px;font-weight:700;margin-top:3px;display:block;opacity:.65}
+.sess-card .sc-check{font-size:18px;flex-shrink:0;opacity:0;transition:opacity .18s}
+.sess-card.active .sc-check{opacity:1}
+
+/* ── Compact sticky label ── */
+.sess-wrap{border-bottom:1px solid var(--line)}
+
+/* ── Sticky Player ── */
+.player{background:rgba(8,16,40,.97);border:1px solid var(--line);border-radius:16px;box-shadow:0 6px 20px rgba(0,0,0,.4);position:sticky;top:5px;z-index:30;backdrop-filter:blur(12px);margin-bottom:10px}
+.pbar{display:flex;align-items:center;gap:8px;padding:8px 10px}
+.pbar audio{flex:1;height:34px;min-width:0}
+.pbtn{border:0;border-radius:10px;padding:7px 11px;font-weight:900;cursor:pointer;font-family:inherit;font-size:12px;white-space:nowrap;flex-shrink:0}
+.pbtn.play{background:linear-gradient(135deg,var(--yellow),var(--gold));color:#1b1600}
+.pbtn.pause{background:#172442;color:#fff;border:1px solid var(--line)}
+.pbtn.more{background:transparent;color:var(--muted);border:1px solid var(--line);font-size:11px;padding:6px 9px}
+
+/* ── Steps Guide under player ── */
+.steps-guide{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:6px 10px 8px;border-top:1px solid var(--line)}
+.sg{text-align:center;font-size:10px;color:var(--muted);line-height:1.3}
+.sg span{display:block;font-size:16px;margin-bottom:2px}
+.sg b{color:#fff;font-size:10px}
+
+/* ── Expand links ── */
+.pexpand{display:none;padding:0 10px 10px;border-top:1px solid var(--line)}
+.pexpand.open{display:block}
+.plinks{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.plinks a{border:1px solid rgba(255,216,77,.4);color:var(--yellow);border-radius:10px;padding:7px 11px;font-size:11px;font-weight:900;text-decoration:none}
+.phint{background:rgba(255,216,77,.1);border:1px solid rgba(255,216,77,.2);color:#ffeaa0;border-radius:10px;padding:7px 10px;font-size:11px;line-height:1.4;margin-top:8px}
+#audioStatus{font-size:11px;color:var(--muted);padding:3px 10px 5px;text-align:center}
+
+/* ── Part Nav Grid — inside the card ── */
+.steps{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.step{border:2px solid var(--line);background:#101c3a;color:#fff;border-radius:20px;padding:18px 14px;text-align:center;font-size:15px;font-weight:900;cursor:pointer;line-height:1.3;transition:all .18s;display:flex;flex-direction:column;align-items:center;gap:2px}
+.step .step-name{font-size:17px;font-weight:900}
+.step .step-sub{font-size:11px;font-weight:700;color:var(--muted);margin-top:3px}
+.step .step-status{font-size:11px;font-weight:700;margin-top:5px;padding:3px 10px;border-radius:20px;background:rgba(255,255,255,.07)}
+.step.active{background:linear-gradient(135deg,var(--yellow),var(--gold));color:#1b1600;border-color:transparent}
+.step.active .step-sub{color:rgba(27,22,0,.65)}
+.step.active .step-status{background:rgba(0,0,0,.15);color:#1b1600}
+.step.done{border-color:var(--green);background:rgba(34,197,94,.07)}
+.step.done .step-name{color:#86efac}
+.step.done .step-status{background:rgba(34,197,94,.18);color:#86efac}
+.step:last-child:nth-child(odd){grid-column:1/-1;max-width:calc(50% - 5px);margin:0 auto;width:100%}
+
+/* ── Card ── */
+.card{background:rgba(16,28,58,.9);border:1px solid var(--line);border-radius:22px;padding:16px;box-shadow:0 10px 28px rgba(0,0,0,.22)}
+.partHead{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:4px}
+.partHead h2{margin:0;font-size:clamp(18px,5vw,26px);color:var(--yellow)}
+.pill{border:1px solid rgba(255,216,77,.4);color:var(--yellow);border-radius:999px;padding:6px 11px;font-size:11px;font-weight:900;white-space:nowrap}
+.sess-label{font-size:11px;color:#94a8cc;margin-bottom:10px;font-weight:700}
+
+/* ── Coach Boxes ── */
+.coach-before{background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.3);border-radius:14px;padding:10px 13px;margin-bottom:12px}
+.coach-before .cb-title{font-size:11px;font-weight:900;color:var(--blue);margin-bottom:5px;letter-spacing:.03em}
+.coach-before .cb-body{font-size:12px;color:#bfdbfe;line-height:1.55}
+.coach-after{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.35);border-radius:14px;padding:10px 13px;margin-top:12px}
+.coach-after .ca-title{font-size:11px;font-weight:900;color:#fbbf24;margin-bottom:5px;letter-spacing:.03em}
+.coach-after .ca-body{font-size:12px;color:#fde68a;line-height:1.55}
+
+/* ── Questions ── */
+.flow{background:rgba(255,216,77,.08);border:1px solid rgba(255,216,77,.2);color:#ffeaa0;border-radius:12px;padding:8px 11px;font-size:11px;line-height:1.4;margin-bottom:12px}
+.qcard{background:#0b1530;border:1px solid var(--line);border-radius:16px;padding:12px;margin:10px 0}
+.qtop{display:flex;justify-content:space-between;gap:8px;margin-bottom:6px}
+.qno{background:linear-gradient(135deg,var(--yellow),var(--gold));color:#151000;border-radius:12px;padding:5px 10px;font-weight:900;font-size:13px}
+.qpart{font-size:11px;color:var(--muted)}
+.qtext{font-size:15px;line-height:1.5;margin:8px 0 10px;font-weight:800}
+.options{display:grid;gap:7px}
+.opt{display:flex;align-items:flex-start;gap:10px;border:1px solid var(--line);background:#101c3a;border-radius:14px;padding:10px;cursor:pointer;line-height:1.45;font-size:14px;transition:border-color .15s}
+.opt:hover{border-color:rgba(255,216,77,.6)}
+.opt input{margin-top:3px;transform:scale(1.2);flex-shrink:0}
+.opt.selected{border-color:var(--yellow);box-shadow:0 0 0 2px rgba(255,216,77,.12)}
+.opt.correct{border-color:var(--green);background:rgba(34,197,94,.12)}
+.opt.wrong{border-color:var(--red);background:rgba(239,68,68,.12)}
+.opt.locked{cursor:default;opacity:.85}
+.opt.locked:hover{border-color:var(--line)}
+
+/* ── Buttons ── */
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+button,.bl{border:0;border-radius:14px;padding:11px 14px;font-weight:900;cursor:pointer;font-family:inherit;text-decoration:none;display:inline-block;font-size:13px}
+.ybtn{background:linear-gradient(135deg,var(--yellow),var(--gold));color:#1b1600}
+.dbtn{background:#172442;color:#fff;border:1px solid var(--line)}
+.gbtn{background:var(--green);color:#06220f}
+.rbtn{background:var(--red);color:#fff}
+.bbtn{background:rgba(96,165,250,.2);color:var(--blue);border:1px solid rgba(96,165,250,.35)}
+
+/* ── Result box ── */
+.result{display:none;margin-top:12px;background:rgba(255,216,77,.08);border:1px solid rgba(255,216,77,.22);border-radius:16px;padding:12px;color:#ffeaa0}
+.score{font-size:32px;font-weight:900;color:var(--yellow);margin:2px 0 6px}
+.sTable{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px}
+.sTable th,.sTable td{border-bottom:1px solid var(--line);padding:7px;text-align:left}
+.keynotice{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.35);color:#fca5a5;border-radius:12px;padding:10px;font-size:12px;margin-bottom:12px;line-height:1.5}
+
+/* ── Final Summary Part Breakdown ── */
+.part-breakdown{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin:12px 0}
+.pb-card{background:#0b1530;border:1px solid var(--line);border-radius:14px;padding:10px;text-align:center}
+.pb-part{font-size:11px;color:var(--muted);margin-bottom:4px}
+.pb-score{font-size:22px;font-weight:900}
+.pb-score.good{color:var(--green)}
+.pb-score.mid{color:var(--yellow)}
+.pb-score.low{color:var(--red)}
+.pb-label{font-size:10px;color:var(--muted);margin-top:3px}
+.strongest{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:14px;padding:10px 13px;margin:10px 0;font-size:12px;color:#bbf7d0;line-height:1.5}
+.improve{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:14px;padding:10px 13px;margin:10px 0;font-size:12px;color:#fca5a5;line-height:1.5}
+
+/* ── Diagrams ── */
+.diagGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 0 10px}
+.diag{background:#f8fafc;color:#0f172a;border-radius:12px;padding:7px;border:2px solid #dbe3ee;font-family:Arial,sans-serif;font-size:10px}
+.room{position:relative;height:105px;border:2px solid #111;background:#fff}
+.item{position:absolute;border:1.5px solid #111;text-align:center;background:#f8fafc;font-weight:bold;display:flex;align-items:center;justify-content:center;font-size:9px}
+.bed{width:44px;height:50px;left:16px;top:34px}.deskA{width:42px;height:22px;left:18px;top:10px}
+.windowA{width:82px;height:14px;right:18px;top:12px}.door{width:64px;height:26px;right:20px;bottom:7px;transform:skewY(12deg)}
+.windowB{width:20px;height:66px;right:12px;top:20px;writing-mode:vertical-rl}.deskB{width:22px;height:44px;right:36px;top:38px;writing-mode:vertical-rl}
+.windowC{width:82px;height:16px;left:18px;bottom:12px}.deskC{width:42px;height:22px;right:22px;top:44px}
+.thGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 0 10px}
+.thD{background:#f0f4fa;color:#0f172a;border-radius:12px;padding:7px;border:2px solid #c8d3e8;font-family:Arial,sans-serif}
+.thL{font-weight:900;font-size:11px;margin-bottom:5px;color:#1e3a6a}
+.thP{display:grid;grid-template-columns:1fr 1fr;gap:3px}
+.thC{border:1.5px solid #8898b0;background:#fff;border-radius:6px;padding:4px 3px;text-align:center;font-size:9px;font-weight:700;min-height:28px;display:flex;align-items:center;justify-content:center}
+.thC.e{background:#e8edf5;color:#bbc;font-weight:400}
+.thC.t{background:#fffde7;border-color:#f59e0b;color:#92400e}
+
+.footer{text-align:center;color:var(--muted);font-size:11px;margin-top:24px}
+@media(max-width:600px){.diagGrid,.thGrid{grid-template-columns:1fr}.partHead{flex-direction:column}.step{padding:14px 10px}.step .step-name{font-size:15px}.steps-guide{grid-template-columns:repeat(4,1fr)}.part-breakdown{grid-template-columns:repeat(3,1fr)}}
+
+/* === STUDENT-FRIENDLY EXAM FLOW FIXES === */
+.examFlow{background:rgba(255,216,77,.13);border:1px solid rgba(255,216,77,.35);color:#ffeaa0;border-radius:16px;padding:12px 14px;font-size:12px;line-height:1.55;margin:12px 0;font-weight:700}
+.examFlow b{color:#fff}.miniRule{display:inline-flex;align-items:center;gap:6px;background:rgba(0,0,0,.16);border-radius:999px;padding:6px 10px;margin:3px 4px 3px 0;font-size:11px;font-weight:900;color:#1a1000}
+.nowPlaying{padding:8px 12px;font-size:12px;font-weight:900;color:var(--yellow);border-bottom:1px solid var(--line);line-height:1.45;background:rgba(255,216,77,.06)}
+.nowPlaying small{display:block;color:var(--muted);font-weight:700;margin-top:2px}.readFirst{background:rgba(34,197,94,.10);border:1px solid rgba(34,197,94,.32);color:#bbf7d0;border-radius:14px;padding:10px 13px;margin:10px 0 12px;font-size:12px;line-height:1.55;font-weight:800}
+.partSpec{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 12px}.specChip{border:1px solid rgba(255,216,77,.30);background:rgba(255,216,77,.08);color:#ffeaa0;border-radius:999px;padding:7px 10px;font-size:11px;font-weight:900}
+.flow{font-size:12px!important;background:rgba(96,165,250,.10)!important;border-color:rgba(96,165,250,.28)!important;color:#bfdbfe!important}
+.afterNext{margin-top:12px;padding:12px;border-radius:14px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.35);color:#bbf7d0;font-size:12px;line-height:1.5}.afterNext button{margin-top:8px;width:100%}
+.pbtn.play,.pbtn.pause{display:none!important}.pbar audio{height:40px}.hero-title{letter-spacing:-.5px}.hero-sub{font-weight:800}.simpleNote{font-size:11px;color:var(--muted);text-align:center;padding:0 10px 8px;line-height:1.4}
+
+
+/* === SIMPLIFIED AUDIO + BUTTON AREA === */
+.player{border-radius:18px;overflow:hidden}
+.audioCard{padding:8px 10px 10px;background:rgba(7,17,38,.98)}
+.audioTitle{font-size:12px;font-weight:900;color:var(--yellow);margin:0 0 7px;line-height:1.35}
+.audioTitle span{color:var(--muted);font-weight:700}
+.pbar{padding:0!important;gap:8px}
+.pbar audio{height:42px!important;width:100%;flex:1;min-width:0}
+.pbtn.more{height:42px;border-radius:14px;padding:0 13px;background:#172442;color:#ffeaa0;border:1px solid rgba(255,216,77,.25);font-size:12px}
+#audioStatus{padding:4px 2px 0!important;font-size:10px!important}
+.simpleNote{display:none!important}
+.btns{display:grid!important;grid-template-columns:1fr 1fr;gap:10px!important;margin-top:16px!important}
+.btns button{min-height:52px;border-radius:18px;font-size:15px;box-shadow:0 8px 18px rgba(0,0,0,.24)}
+.btns .gbtn,.btns .bbtn{grid-column:1/-1;font-size:16px}
+.btns .rbtn{background:rgba(239,68,68,.14)!important;color:#fca5a5!important;border:1px solid rgba(239,68,68,.32)!important;box-shadow:none}
+.btns .dbtn{background:#101c3a!important;border:1px solid rgba(255,255,255,.16)!important}
+@media(max-width:600px){
+  .player{top:0;border-radius:0 0 18px 18px;margin-left:-12px;margin-right:-12px}
+  .nowPlaying{font-size:11px;padding:7px 12px}
+  .nowPlaying small{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .audioCard{padding:7px 10px 8px}
+  .audioTitle{font-size:11px;margin-bottom:6px}
+  .audioTitle span{display:none}
+  .pbar audio{height:38px!important}
+  .pbtn.more{height:38px;padding:0 10px;font-size:11px}
+  .btns{grid-template-columns:1fr 1fr!important;gap:8px!important}
+  .btns button{min-height:48px;font-size:14px;border-radius:16px;padding:10px 12px}
+  .btns .gbtn,.btns .bbtn{grid-column:1/-1}
+}
+
+@media(max-width:600px){.steps-guide{display:none}.hero{padding:18px 16px}.sess-card{padding:12px}.partSpec{gap:5px}.specChip{font-size:10px;padding:6px 8px}.pbar{padding:8px}.nowPlaying{font-size:11px}.card{padding:13px}}
+
+/* === SESSION-FIRST FLOW (Writing/Speaking-style) === */
+.mode-home #player,.mode-home #app{display:none!important}
+.mode-practice .hero{display:none!important}
+.sessionActions{display:grid;grid-template-columns:1fr;gap:10px;margin-top:14px}
+.startBtn{width:100%;border:0;border-radius:18px;padding:15px 18px;background:#1a1000;color:var(--yellow);font-weight:900;font-family:inherit;font-size:16px;box-shadow:0 10px 22px rgba(0,0,0,.18);cursor:pointer}
+.startBtn small{display:block;color:rgba(255,216,77,.72);font-size:11px;margin-top:3px;font-weight:700}
+.homeFlow{margin-top:12px;background:rgba(255,255,255,.18);border:1px solid rgba(0,0,0,.12);border-radius:16px;padding:12px;color:#1a1000;font-size:12px;line-height:1.55;font-weight:800}
+.homeFlow b{display:block;margin-bottom:4px}
+.homeBtn{background:#101c3a!important;color:#ffeaa0!important;border:1px solid rgba(255,216,77,.28)!important}
+.mode-practice .wrap{padding-top:6px}
+@media(max-width:600px){.startBtn{font-size:15px;padding:14px}.homeFlow{font-size:11px}}
+
+
+/* === SIMPLIFIED COACH SECTION (SmartWriting-style) === */
+.coach-before,.coach-after,.flow{display:none!important}
+.readFirst{display:none!important}
+.simpleCoach{background:linear-gradient(135deg,rgba(255,216,77,.14),rgba(255,184,0,.07));border:1px solid rgba(255,216,77,.34);color:#ffeaa0;border-radius:18px;padding:13px 14px;margin:12px 0 14px;font-size:13px;line-height:1.6;font-weight:800}
+.simpleCoach b{display:block;color:#fff;margin-bottom:5px;font-size:12px;letter-spacing:.02em}
+.simpleCoach span{display:block;color:#fff3bd;font-weight:700}
+.simpleCoach .quickLine{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
+.simpleCoach .quickTag{display:inline-flex;align-items:center;border:1px solid rgba(255,216,77,.25);background:rgba(0,0,0,.14);border-radius:999px;padding:6px 9px;font-size:11px;color:#ffeaa0;font-weight:900}
+.sess-label{font-size:12px!important;line-height:1.45!important;color:#a9bad8!important;margin:4px 0 8px!important}
+@media(max-width:600px){.simpleCoach{font-size:12px;padding:12px;margin:10px 0 12px}.simpleCoach .quickTag{font-size:10px;padding:5px 8px}.sess-label{font-size:11px!important}}
+
+</style></head>
+<body><div class="wrap">
+
+<!-- HERO HEADER (SmartReading style) -->
+<div class="hero" id="hero">
+  <span class="hero-icon">🎧</span>
+  <div class="hero-title">MUET Smart<br>Listening Practice</div>
+  <div class="hero-sub">2nd Language Friendly · Part-by-part MUET Listening Practice</div>
+  <div class="hero-hint">📌 Select a session → read the questions → play the audio → answer by part → check your score.</div><div class="miniRule">⏱️ 50 minutes</div><div class="miniRule">🔁 Audio twice</div><div class="miniRule">✅ 30 questions</div>
+  <div class="sess-cards" id="heroSess"></div>
+  <div class="sessionActions">
+    <button class="startBtn" onclick="startPractice()">▶ Start Selected Session<small>Part I will open on the next screen</small></button>
+  </div>
+  <div class="homeFlow"><b>Student flow:</b> 1. Choose session → 2. Start session → 3. Read Part I questions → 4. Play audio → 5. Answer and continue part by part.</div>
+</div>
+
+<!-- STICKY PLAYER — audio + steps guide always visible -->
+<div class="player" id="player">
+  <div class="sess-wrap" id="sessWrap"></div>
+  <div class="audioCard">
+    <div class="audioTitle">🎧 Play audio here <span>• Each text is played twice</span></div>
+    <div class="pbar">
+      <audio id="audio" controls preload="auto" playsinline></audio>
+      <button class="pbtn more" onclick="toggleExpand()" id="moreBtn">Links ▾</button>
+    </div>
+    <div id="audioStatus"></div>
+  </div>
+  <!-- PRIORITY 4: Step-by-step guide always visible under player -->
+  <div class="steps-guide">
+    <div class="sg"><span>1️⃣</span><b>Press Play</b><br>Start the audio</div>
+    <div class="sg"><span>2️⃣</span><b>Listen</b><br>Focus carefully</div>
+    <div class="sg"><span>3️⃣</span><b>Answer Fast</b><br>No overthinking</div>
+    <div class="sg"><span>4️⃣</span><b>Check Part</b><br>Then move on</div>
+  </div>
+  <div class="pexpand" id="pexpand">
+    <div class="phint" id="audioHint">If audio is blocked, use Open in New Tab below.</div>
+    <div class="plinks">
+      <a id="audioTabLink" href="#" target="_blank">🔊 Open Audio in New Tab</a>
+      <a id="pdfLink" href="#" target="_blank">📄 Original Paper</a>
+    </div>
+  </div>
+</div>
+
+<!-- QUIZ -->
+<main id="app"></main>
+
+</div>
+
+<script>
+/* ================================================================
+   PRIORITY 2 — COACHING CONTENT per part per session
+   ================================================================ */
+const COACHING = {
+  s1_2025: {
+    'Part I': {
+      before: '<b>🎯 What to listen for:</b> A conversation between two people. Listen for specific details — names, places, and exact actions mentioned. Note what each person says they did, found, or will do.',
+      after:  '<b>💡 Why students miss this:</b> Students understand the general story but miss specific details. Avoid assuming — the answer must come directly from what was said, not what seems logical.'
+    },
+    'Part II': {
+      before: '<b>🎯 What to listen for:</b> A longer talk or speech. Follow the sequence of advice given. Listen for the speaker\'s main message and how they support each point with examples.',
+      after:  '<b>💡 Why students miss this:</b> Students confuse what the speaker implies with what was actually stated. Stick to what you heard — do not add your own interpretation.'
+    },
+    'Part III': {
+      before: '<b>🎯 What to listen for:</b> Three different speakers. Focus on ONE speaker at a time. Identify the KEY idea each person expresses — not every word they say.',
+      after:  '<b>💡 Why students miss this:</b> Students hear all three speakers but mix up who said what. Listen actively for each speaker\'s turn and match immediately before the next one starts.'
+    },
+    'Part IV': {
+      before: '<b>🎯 What to listen for:</b> An interview or talk show. Separate the interviewer\'s questions from the guest\'s answers. Focus on the guest\'s specific opinions, examples and statistics.',
+      after:  '<b>💡 Why students miss this:</b> Students confuse the interviewer\'s words with the guest\'s answer. The question asks about the guest\'s view — not the host\'s.'
+    },
+    'Part V': {
+      before: '<b>🎯 What to listen for:</b> Three short separate dialogues. Each dialogue tests different skills. Listen for the GIST first, then the specific detail being asked about in each question.',
+      after:  '<b>💡 Why students miss this:</b> Students focus too hard on unknown vocabulary and miss the key detail. If you do not know a word, move on — the answer is usually in the clearest sentence.'
+    }
+  },
+  s2_2024: {
+    'Part I': {
+      before: '<b>🎯 What to listen for:</b> A casual conversation. Pay attention to exact places, routines, and actions. Small details like time (morning/afternoon) and location (village/city) are commonly tested.',
+      after:  '<b>💡 Why students miss this:</b> Students hear the general topic (village life) but miss the specific detail tested (e.g. which day, which place). Train yourself to listen for precise words.'
+    },
+    'Part II': {
+      before: '<b>🎯 What to listen for:</b> A motivational speech with steps or advice. Listen for the sequence — first approach, second approach. Note what students should DO, not just what is discussed.',
+      after:  '<b>💡 Why students miss this:</b> Students confuse the topic of discussion with the actual instruction given. The question tests what the speaker says TO DO, not just what is mentioned.'
+    },
+    'Part III': {
+      before: '<b>🎯 What to listen for:</b> Three speakers each sharing their main method. Identify the SINGLE main idea per speaker — not a secondary point they mention. Use the option list as your guide.',
+      after:  '<b>💡 Why students miss this:</b> Speakers often mention more than one method. The answer is the MAIN way — usually the one they describe in most detail or state directly at the start.'
+    },
+    'Part IV': {
+      before: '<b>🎯 What to listen for:</b> A radio talk show. The guest is explaining a topic (cosplay). Listen for what the guest says the company does, what cosplayers do, and the benefits they describe.',
+      after:  '<b>💡 Why students miss this:</b> Students mix up what the host says with what the guest says. Focus on the guest\'s direct statements — especially when asked "what does Bobby say?"'
+    },
+    'Part V': {
+      before: '<b>🎯 What to listen for:</b> Three short dialogues on different topics. Each dialogue has only 2 questions. Read the questions FIRST so you know exactly what detail to listen for.',
+      after:  '<b>💡 Why students miss this:</b> Students do not read ahead between dialogues. Use every pause to read the next two questions before the next dialogue starts.'
+    }
+  }
+};
+
+/* ================================================================
+   SESSION DATA
+   ================================================================ */
+const SESSIONS = {
+  s1_2025: {
+    id:'s1_2025', label:'S1 2025', title:'Session 1, 2025',
+    audioSrc:'MUET_S1_2025_Full_Track_compressed.mp3',
+    pdfSrc:'2025_MUET_LISTENING.pdf',
+    answerKey:'CCAAACBBBCACBCCEDAAAABBCCAACAB',
+    partMeta:{
+      'Part I':'Conversation between Maryam and Haris · Q1–7',
+      'Part II':'Talk by Dr Amir, Human Relations Officer · Q8–14',
+      'Part III':'Three friends — memorable Mother\'s Day gifts · Q15–17',
+      'Part IV':'Interview — generation gaps at the office · Q18–24',
+      'Part V':'Three short dialogues · Q25–30'
+    },
+    questions:[
+      {part:'Part I',q:1,text:"Haris was not allowed to play video games because",options:{A:"he missed his breakfast",B:"he made his mother angry",C:"he needed to clean his room"}},
+      {part:'Part I',q:2,text:"The light from the sun clearly shows the",options:{A:"computer",B:"clothes",C:"dust"}},
+      {part:'Part I',q:3,text:"Haris can put all his clothes in his cupboard if",options:{A:"he takes out clothes that he does not like",B:"he checks his old and tight clothes properly",C:"he gets his mother to buy a bigger cupboard"}},
+      {part:'Part I',q:4,text:"Haris left his football boots",options:{A:"on the bookshelf",B:"outside the house",C:"by his bedroom door"}},
+      {part:'Part I',q:5,text:"Eating in the bedroom will",options:{A:"attract insects",B:"make Haris cough",C:"fill the room with a smell"}},
+      {part:'Part I',q:6,text:"Changing the position of the desk will make the room",options:{A:"nicer",B:"cleaner",C:"brighter"}},
+      {part:'Part I',q:7,text:"Where is the new place for Haris' desk?",options:{A:"Layout A",B:"Layout B",C:"Layout C"},diagram:'bedroom'},
+      {part:'Part II',q:8,text:"What do Dr Amir and the students have in common?",options:{A:"Living in a university hostel",B:"Studying in Seri Perak University",C:"Joining the university Student Club"}},
+      {part:'Part II',q:9,text:"Dr Amir was grateful because his friends",options:{A:"trusted him with their troubles",B:"stayed close with him all these years",C:"understood his problems of missing home"}},
+      {part:'Part II',q:10,text:"Dr Amir warns against students who",options:{A:"delay to complete group projects",B:"refuse to take part in group projects",C:"avoid difficult work in group projects"}},
+      {part:'Part II',q:11,text:"A good friend is someone who we contact when",options:{A:"we feel like doing it",B:"we start feeling distant",C:"we have good news to share"}},
+      {part:'Part II',q:12,text:"What is special about Dr Amir and his three friends?",options:{A:"They are drawn together due to their hobbies.",B:"They become more similar in character over time.",C:"They grow close to each other despite hardly meeting."}},
+      {part:'Part II',q:13,text:"What attracts people to become good friends online?",options:{A:"Physical looks",B:"Common interests",C:"Frequent conversation"}},
+      {part:'Part II',q:14,text:"The final advice to the students is they should",options:{A:"go all out to win new friends",B:"turn bad friends into good friends",C:"develop good qualities as a friend"}},
+      {part:'Part III',q:15,text:"Eva's most memorable gift for Mother's Day was",options:{A:"Colourful flowers",B:"Special picnic",C:"Favourite food",D:"Surprise present",E:"Unexpected lunch"}},
+      {part:'Part III',q:16,text:"Joe's most memorable gift for Mother's Day was",options:{A:"Colourful flowers",B:"Special picnic",C:"Favourite food",D:"Surprise present",E:"Unexpected lunch"}},
+      {part:'Part III',q:17,text:"Min's most memorable gift for Mother's Day was",options:{A:"Colourful flowers",B:"Special picnic",C:"Favourite food",D:"Surprise present",E:"Unexpected lunch"}},
+      {part:'Part IV',q:18,text:"A generation gap happens when people have different",options:{A:"ideas",B:"roles",C:"ages"}},
+      {part:'Part IV',q:19,text:"The quality of work suffers when workers fail to",options:{A:"interact well",B:"solve conflicts",C:"address problems"}},
+      {part:'Part IV',q:20,text:"How can workers generate efficient communication?",options:{A:"Use various methods",B:"Increase human contact",C:"Apply the latest technology"}},
+      {part:'Part IV',q:21,text:"Workers of different generations work best when they",options:{A:"feel at ease",B:"work as a team",C:"use digital technology"}},
+      {part:'Part IV',q:22,text:"Why is technology training given to the young workers?",options:{A:"To assist the older generation later",B:"To keep up with the latest development",C:"To experience different learning methods"}},
+      {part:'Part IV',q:23,text:"By sharing their technological skills, the younger generation can",options:{A:"demonstrate appreciation to the company",B:"contribute to knowledge transfer",C:"show off their abilities"}},
+      {part:'Part IV',q:24,text:"Companies can perform well when managers",options:{A:"ensure the workers are satisfied",B:"understand talents of the workers",C:"lead the workers with a suitable style"}},
+      {part:'Part V — Dialogue 1',q:25,text:"The British Army made the major change for badminton in its",options:{A:"rules",B:"name",C:"equipment"}},
+      {part:'Part V — Dialogue 1',q:26,text:"Mr Daniel's information on badminton competitions highlighted that",options:{A:"more people watched the game as time goes by",B:"more tournaments were added over the years",C:"more women started to compete in the game"}},
+      {part:'Part V — Dialogue 2',q:27,text:"Plant-eating dinosaurs became extinct because",options:{A:"they lost their food sources",B:"they were hit by the space rock",C:"they were eaten by meat-eating dinosaurs"}},
+      {part:'Part V — Dialogue 2',q:28,text:"Joyce finds it interesting that",options:{A:"sea reptiles were killed by diseases",B:"scientists knew why dinosaurs became weak",C:"frogs managed to survive the climate change"}},
+      {part:'Part V — Dialogue 3',q:29,text:"Patients take plastic surgery holidays to South Korea because",options:{A:"the procedures are cheaper",B:"the risks of the operations are lower",C:"the treatments received differ from other countries"}},
+      {part:'Part V — Dialogue 3',q:30,text:"At the end of the interview, Dr Nina",options:{A:"described a death due to multiple surgeries",B:"offered advice on the dangers of plastic surgery",C:"explained the legal actions taken after a failed surgery"}}
+    ]
+  },
+  s2_2024: {
+    id:'s2_2024', label:'S2 2024', title:'Session 2, 2024',
+    audioSrc:'MUET_S2_2024_Full_Track.mp3',
+    pdfSrc:'MUET_S2_2024_Listening.pdf',
+    answerKey:'BABACAABCBBBCACDBBBABAACBACBCC',
+    partMeta:{
+      'Part I':'Conversation between Nazri and his grandma · Q1–7',
+      'Part II':'Miss Susan, motivational speaker — Talking to Strangers · Q8–14',
+      'Part III':'Daisy, James and Hanis — how they save time · Q15–17',
+      'Part IV':'Radio talk show: Anisa & Bobby from Costume Fun · Q18–24',
+      'Part V':'Three short dialogues · Q25–30'
+    },
+    questions:[
+      {part:'Part I',q:1,text:"Nazri slept well in the",options:{A:"city",B:"village",C:"university"}},
+      {part:'Part I',q:2,text:"Grandpa goes to the market",options:{A:"every week",B:"every morning",C:"every afternoon"}},
+      {part:'Part I',q:3,text:"In Terengganu, Nazri",options:{A:"cooked food",B:"cleaned houses",C:"moved animals"}},
+      {part:'Part I',q:4,text:"Which picture shows the correct location of the tree house (△)?",options:{A:"Layout A",B:"Layout B",C:"Layout C"},diagram:'treehouse'},
+      {part:'Part I',q:5,text:"Grandma asked Nazri to",options:{A:"bring a guest to the tree house",B:"spend a night at the tree house",C:"pick the colour for the tree house"}},
+      {part:'Part I',q:6,text:"Nazri's parents will",options:{A:"miss birdwatching",B:"arrive on Friday morning",C:"take photos of the village"}},
+      {part:'Part I',q:7,text:"Nazri will go back to the village to",options:{A:"eat durians",B:"help Grandpa",C:"pick some fruits"}},
+      {part:'Part II',q:8,text:"You can bring a friend to",options:{A:"talk to strangers",B:"offer you some advice",C:"develop your confidence"}},
+      {part:'Part II',q:9,text:"To watch people, you should go to a place where",options:{A:"many people are around",B:"people are not walking fast",C:"you can see people's activities"}},
+      {part:'Part II',q:10,text:"In your notebook, you should write",options:{A:"the number of people walking by",B:"the opinions you have of the people",C:"the interactions you hear among people"}},
+      {part:'Part II',q:11,text:"The second approach starts with",options:{A:"walking slowly around strangers",B:"making eye contact with a stranger",C:"starting small talks with everyone you meet"}},
+      {part:'Part II',q:12,text:"When you ask people questions, you",options:{A:"seek more responses",B:"wait for their answers",C:"make them feel comfortable"}},
+      {part:'Part II',q:13,text:"The kind of questions you ask to maintain a conversation is",options:{A:"specific questions",B:"personal questions",C:"open-ended questions"}},
+      {part:'Part II',q:14,text:"To ensure your safety, you should consider",options:{A:"the time of the day",B:"the people you are with",C:"the outcome of the conversation"}},
+      {part:'Part III',q:15,text:"Daisy's main way to save time",options:{A:"Make fewer shopping trips",B:"Schedule activities based on dates",C:"Do one thing at a time",D:"Put objects in their own places",E:"Complete tasks the night before"}},
+      {part:'Part III',q:16,text:"James' main way to save time",options:{A:"Make fewer shopping trips",B:"Schedule activities based on dates",C:"Do one thing at a time",D:"Put objects in their own places",E:"Complete tasks the night before"}},
+      {part:'Part III',q:17,text:"Hanis' main way to save time",options:{A:"Make fewer shopping trips",B:"Schedule activities based on dates",C:"Do one thing at a time",D:"Put objects in their own places",E:"Complete tasks the night before"}},
+      {part:'Part IV',q:18,text:"Costume Fun hopes that the radio talk show will",options:{A:"advertise the company",B:"promote cosplay events nationwide",C:"increase the fanbase for the radio talk show"}},
+      {part:'Part IV',q:19,text:"Cosplayers are able to",options:{A:"sell their costumes",B:"wear different costumes",C:"become famous for their costumes"}},
+      {part:'Part IV',q:20,text:"Bobby's company is trying to",options:{A:"support cosplay culture",B:"promote Japanese comic characters",C:"assist people to copy their favourite movie stars"}},
+      {part:'Part IV',q:21,text:"Costume party guests in general will",options:{A:"wear hats, scarfs and other decorations",B:"use things around them for their costumes",C:"design their outfits to match their personalities"}},
+      {part:'Part IV',q:22,text:"Cosplayers make sure that they",options:{A:"imitate their character well",B:"accept their given character",C:"act like their character in daily life"}},
+      {part:'Part IV',q:23,text:"The greatest benefit for cosplayers is they can",options:{A:"earn well to maintain their hobby",B:"get invited to international festivals",C:"travel across the world to attend events"}},
+      {part:'Part IV',q:24,text:"The best statement to describe the passion of cosplayers is they",options:{A:"start attending cosplay events from young",B:"travel far to meet other famous cosplayers",C:"think, act and look like the original characters"}},
+      {part:'Part V — Dialogue 1',q:25,text:"Many parents are unable to help their children with homework because they",options:{A:"have limited time",B:"lack content knowledge",C:"are busy with their work"}},
+      {part:'Part V — Dialogue 1',q:26,text:"How does HomeworX app work?",options:{A:"Students use pre-approved tutors online.",B:"Students and tutors sign up for online support.",C:"Specialist tutors are assigned to the same region as the students."}},
+      {part:'Part V — Dialogue 2',q:27,text:"Tony considers himself an expert in NoLimits because he",options:{A:"designed tutorials on the software himself",B:"had no difficulties learning to operate the software",C:"carried out test runs successfully using the software"}},
+      {part:'Part V — Dialogue 2',q:28,text:"To impart a professional image to his show, Tony",options:{A:"ensures the lighting and sound are appropriate",B:"directs advanced lighting onto the speaker's face",C:"uses headphones to cut down the surrounding noise"}},
+      {part:'Part V — Dialogue 3',q:29,text:"For long journeys, drivers of the battery electric vehicles need to",options:{A:"maintain the battery",B:"charge the battery at home",C:"recharge the battery along the way"}},
+      {part:'Part V — Dialogue 3',q:30,text:"What is Kelly's biggest concern regarding EV?",options:{A:"Maintenance cost is high.",B:"Trained mechanics are scarce.",C:"Charging is constantly needed."}}
+    ]
+  }
+};
+
+/* ================================================================
+   STATE
+   ================================================================ */
+let sid = localStorage.getItem('muet_session')||'s1_2025';
+let cp = 0, done = new Set(), locked = new Set();
+let expanded = false;
+let screen = localStorage.getItem('muet_screen') || 'home';
+
+function sess(){ return SESSIONS[sid]; }
+function sk(k){ return 'muet_'+sid+'_'+k; }
+function loadState(){
+  cp = Number(localStorage.getItem(sk('part'))||0);
+  done = new Set(JSON.parse(localStorage.getItem(sk('done'))||'[]'));
+  locked = new Set(JSON.parse(localStorage.getItem(sk('locked'))||'[]'));
+}
+
+function setMode(){
+  document.body.classList.toggle('mode-home', screen === 'home');
+  document.body.classList.toggle('mode-practice', screen !== 'home');
+}
+function startPractice(){
+  screen = 'practice';
+  localStorage.setItem('muet_screen', screen);
+  setMode();
+  loadState();
+  updatePlayer();
+  renderSwitcher();
+  renderPart();
+  setTimeout(()=>document.getElementById('player')?.scrollIntoView({behavior:'smooth',block:'start'}),60);
+}
+function backHome(){
+  screen = 'home';
+  localStorage.setItem('muet_screen', screen);
+  setMode();
+  renderSwitcher();
+  const app=document.getElementById('app');
+  if(app) app.innerHTML='';
+  setTimeout(()=>document.getElementById('hero')?.scrollIntoView({behavior:'smooth',block:'start'}),60);
+}
+
+/* ================================================================
+   DIAGRAMS
+   ================================================================ */
+function bedroomDiagram(){
+  return '<div class="diagGrid">'+['A','B','C'].map(l=>'<div class="diag"><b>Layout '+l+'</b><div class="room">'+
+    (l==='A'?'<div class="item deskA">Desk</div><div class="item bed">Bed</div><div class="item windowA">Window</div><div class="item door">Door</div>':'')+
+    (l==='B'?'<div class="item bed">Bed</div><div class="item windowB">Window</div><div class="item deskB">Desk</div><div class="item door">Door</div>':'')+
+    (l==='C'?'<div class="item bed">Bed</div><div class="item windowC">Window</div><div class="item deskC">Desk</div><div class="item door">Door</div>':'')+
+    '</div></div>').join('')+'</div>';
+}
+function treehouseDiagram(){
+  const L=[
+    {n:'Layout A',r:[['Paddy Field',''],['Guava Trees','Mango Tree △'],['Coconut Trees','']]},
+    {n:'Layout B',r:[['Guava Trees','Mango Tree △'],['Paddy Field',''],['Coconut Trees','']]},
+    {n:'Layout C',r:[['Coconut Trees',''],['','Paddy Field'],['Guava Trees','Mango Tree △']]}
+  ];
+  return '<div class="thGrid">'+L.map(l=>'<div class="thD"><div class="thL">'+l.n+'</div><div class="thP">'+
+    l.r.map(row=>row.map(c=>c===''?'<div class="thC e">—</div>':c.includes('△')?'<div class="thC t">'+c+'</div>':'<div class="thC">'+c+'</div>').join('')).join('')+
+    '</div></div>').join('')+'</div>';
+}
+
+/* ================================================================
+   PLAYER
+   ================================================================ */
+function updatePlayer(){
+  const s = sess();
+  const a = document.getElementById('audio');
+  if(a.dataset.src !== s.audioSrc){
+    a.dataset.src = s.audioSrc;
+    a.innerHTML = '<source src="'+s.audioSrc+'" type="audio/mpeg">';
+    a.load();
+    document.getElementById('audioStatus').textContent = '';
+  }
+  document.getElementById('audioTabLink').href = s.audioSrc;
+  document.getElementById('pdfLink').href = s.pdfSrc;
+}
+function toggleExpand(){
+  expanded = !expanded;
+  document.getElementById('pexpand').className = 'pexpand'+(expanded?' open':'');
+  document.getElementById('moreBtn').textContent = expanded ? 'Less ▴' : 'More ▾';
+}
+function startAudio(){
+  const a = document.getElementById('audio'), st = document.getElementById('audioStatus');
+  a.play()
+    .then(()=>{ st.textContent='🔊 Audio playing — answer as you listen.'; st.style.color='#86efac'; })
+    .catch(()=>{ st.textContent='⚠️ Blocked — press ▶ on player or use Open in New Tab.'; st.style.color='#fca5a5'; if(!expanded)toggleExpand(); });
+}
+function pauseAudio(){ document.getElementById('audio').pause(); }
+
+/* ================================================================
+   SESSION SWITCHER
+   ================================================================ */
+function renderSwitcher(){
+  // Hero session cards
+  document.getElementById('heroSess').innerHTML = Object.values(SESSIONS).map(s=>{
+    const ready = s.answerKey.indexOf('X')===-1;
+    const ans = s.questions.filter(q=>localStorage.getItem('muet_'+s.id+'_q_'+q.q)).length;
+    const pct = Math.round(ans/s.questions.length*100);
+    const isActive = s.id===sid;
+    return '<button class="sess-card'+(isActive?' active':'')+'" onclick="switchSess(\''+s.id+'\')">'+
+      '<span class="sc-icon">📄</span>'+
+      '<span class="sc-body">'+
+        '<span class="sc-title">'+s.title+'</span>'+
+        '<span class="sc-meta">30 questions · Listening Paper'+(ready?'':' · ⚠️ key pending')+'</span>'+
+        '<span class="sc-prog">'+ans+'/30 answered'+(ans>0?' ('+pct+'%)':'')+'</span>'+
+      '</span>'+
+      '<span class="sc-check">✓</span>'+
+    '</button>';
+  }).join('');
+
+  // Compact sticky label showing active session and current part
+  updateNowPlaying();
+}
+function switchSess(id){
+  sid=id; localStorage.setItem('muet_session',id); loadState(); updatePlayer(); renderSwitcher();
+  if(screen === 'practice'){
+    renderPart();
+    setTimeout(()=>{ const app=document.getElementById('app'); if(app) app.scrollIntoView({behavior:'smooth',block:'start'}); },80);
+  } else {
+    const app=document.getElementById('app'); if(app) app.innerHTML='';
+  }
+}
+
+/* ================================================================
+   PARTS
+   ================================================================ */
+function parts(){
+  return ['Part I','Part II','Part III','Part IV','Part V'].map(n=>({
+    name:n, subtitle:sess().partMeta[n],
+    questions:sess().questions.filter(q=>n==='Part V'?q.part.startsWith('Part V'):q.part===n)
+  }));
+}
+function keyMap(){ const m={}; sess().answerKey.split('').forEach((x,i)=>m[i+1]=x); return m; }
+function partSpec(p){
+  const qn = p.questions.length;
+  const meta = p.subtitle || '';
+  let type = 'MCQ · 3 options', level = 'B2';
+  if(p.name==='Part I'){type='Dialogue · MCQ'; level='A2–B1';}
+  if(p.name==='Part II'){type='Monologue · MCQ'; level='B1–B2';}
+  if(p.name==='Part III'){type='3 speakers · matching'; level='B2';}
+  if(p.name==='Part IV'){type='Dialogue/interview · MCQ'; level='B2';}
+  if(p.name==='Part V'){type='3 short dialogues · MCQ'; level='B2–C1';}
+  return '<div class="partSpec"><span class="specChip">🎧 '+type+'</span><span class="specChip">❓ '+qn+' questions</span><span class="specChip">📊 CEFR '+level+'</span></div>';
+}
+function updateNowPlaying(){
+  const ps = parts(); const p = ps[cp] || ps[0];
+  const el = document.getElementById('sessWrap'); if(!el||!p) return;
+  el.innerHTML = '<div class="nowPlaying">🎧 '+sess().title+' · Now: '+p.name+'<small>'+p.subtitle+'</small></div>';
+}
+
+function renderSteps(){
+  // Part shortcut cards were removed to keep the student flow simple.
+  // Students now use Previous / Next Part buttons only.
+  const el = document.getElementById('steps');
+  if(el) el.innerHTML = '';
+}
+
+
+function simpleCoach(partName){
+  const tips = {
+    'Part I':'Read Q1–Q7 first. Listen for names, places, time and exact actions.',
+    'Part II':'Follow the talk in order. Focus on the speaker’s advice and examples.',
+    'Part III':'One speaker = one main idea. Match immediately before the next speaker starts.',
+    'Part IV':'Separate the host’s question from the guest’s answer. Choose what the guest says.',
+    'Part V':'Read the next two questions during the pause. Listen for the clearest detail.'
+  };
+  const tip = tips[partName] || 'Read the questions first, then listen for the key words.';
+  return '<div class="simpleCoach"><b>📌 Quick Listening Tip</b><span>'+tip+'</span><div class="quickLine"><span class="quickTag">Read first</span><span class="quickTag">Listen twice</span><span class="quickTag">Answer fast</span></div></div>';
+}
+
+function renderPart(){
+  const ps=parts(), p=ps[cp];
+  const isLocked = locked.has(cp);
+  const keyOk = sess().answerKey.indexOf('X')===-1;
+  const warn = keyOk?'':'<div class="keynotice">⚠️ <b>Answer key not set.</b> Update <code>answerKey</code> in the script.</div>';
+
+  // Simplified coach tip for 2nd language users
+  const coachBefore = simpleCoach(p.name);
+
+  const qs = p.questions.map(q=>{
+    let dg='';
+    if(q.diagram==='bedroom') dg=bedroomDiagram();
+    if(q.diagram==='treehouse') dg=treehouseDiagram();
+    const opts=Object.entries(q.options).map(([k,v])=>
+      '<label class="opt'+(isLocked?' locked':'')+'" data-q="'+q.q+'" data-letter="'+k+'">'+
+      '<input type="radio" name="'+sid+'_q'+q.q+'" value="'+k+'" '+(isLocked?'disabled':'')+' onchange="pick('+q.q+',\''+k+'\')">'+
+      '<b>'+k+'</b> <span>'+v+'</span></label>'
+    ).join('');
+    return '<div class="qcard"><div class="qtop"><span class="qno">Q'+q.q+'</span><span class="qpart">'+q.part+'</span></div>'+
+      '<div class="qtext">'+q.text+'</div>'+dg+'<div class="options">'+opts+'</div></div>';
+  }).join('');
+
+  // PRIORITY 3 — lock state buttons
+  const actionBtns = isLocked
+    ? '<button class="bbtn" onclick="retryPart()">🔄 Retry Part</button>'
+    : '<button class="gbtn" onclick="checkPart()">✓ Check Part</button>';
+
+  document.getElementById('app').innerHTML=
+    '<div class="card">'+
+    '<div class="partHead"><h2>'+p.name+'</h2><span class="pill" id="pp">0/'+p.questions.length+' answered</span></div>'+
+    '<div class="sess-label">🎧 MUET Smart Listening · '+sess().title+' · '+p.subtitle+'</div>'+
+    partSpec(p)+
+    warn+coachBefore+
+    qs+
+    '<div class="btns">'+actionBtns+
+      '<button class="dbtn" onclick="prevPart()">← Previous</button>'+
+      '<button class="ybtn" onclick="nextPart()">Next Part →</button>'+
+      '<button class="homeBtn" onclick="backHome()">⌂ Sessions</button>'+
+      '<button class="rbtn" onclick="resetSess()">Reset</button>'+
+    '</div>'+
+    '<div class="result" id="partResult"></div></div>';
+
+  restoreAns();
+  if(isLocked) reapplyColors();
+  updatePP();
+  renderSteps();
+  updateNowPlaying();
+  // Gentle scroll — land just below the sticky player, not the very top
+  setTimeout(()=>{
+    const app = document.getElementById('app');
+    if(app) app.scrollIntoView({behavior:'smooth', block:'start'});
+  }, 60);
+}
+
+function pick(q,letter){
+  if(locked.has(cp)) return;
+  localStorage.setItem(sk('q_'+q),letter);
+  document.querySelectorAll('.opt[data-q="'+q+'"]').forEach(e=>e.classList.remove('selected'));
+  const el=document.querySelector('.opt[data-q="'+q+'"][data-letter="'+letter+'"]');
+  if(el) el.classList.add('selected');
+  updatePP(); renderSwitcher();
+}
+
+function restoreAns(){
+  parts()[cp].questions.forEach(q=>{
+    const a=localStorage.getItem(sk('q_'+q.q));
+    if(a){
+      const r=document.querySelector('input[name="'+sid+'_q'+q.q+'"][value="'+a+'"]');
+      if(r){ r.checked=true; const el=document.querySelector('.opt[data-q="'+q.q+'"][data-letter="'+a+'"]'); if(el) el.classList.add('selected'); }
+    }
+  });
+}
+
+function reapplyColors(){
+  const km=keyMap();
+  parts()[cp].questions.forEach(q=>{
+    const u=localStorage.getItem(sk('q_'+q.q)), k=km[q.q];
+    if(!u||!k||k==='X') return;
+    document.querySelectorAll('.opt[data-q="'+q.q+'"]').forEach(e=>{
+      e.classList.remove('correct','wrong');
+      if(e.dataset.letter===k) e.classList.add('correct');
+      if(e.dataset.letter===u && u!==k) e.classList.add('wrong');
+    });
+  });
+}
+
+function updatePP(){
+  const p=parts()[cp], n=p.questions.filter(q=>localStorage.getItem(sk('q_'+q.q))).length;
+  const el=document.getElementById('pp'); if(el) el.textContent=n+'/'+p.questions.length+' answered';
+}
+
+function checkPart(){
+  const km=keyMap(), p=parts()[cp], keyOk=sess().answerKey.indexOf('X')===-1;
+  let ok=0,rows='';
+  p.questions.forEach(q=>{
+    const u=localStorage.getItem(sk('q_'+q.q))||'-', k=km[q.q]||'X';
+    if(u===k&&k!=='X') ok++;
+    document.querySelectorAll('.opt[data-q="'+q.q+'"]').forEach(e=>{
+      e.classList.remove('correct','wrong');
+      if(k!=='X'&&e.dataset.letter===k) e.classList.add('correct');
+      if(e.dataset.letter===u&&u!==k) e.classList.add('wrong');
+    });
+    rows+='<tr><td>'+q.q+'</td><td>'+u+'</td><td>'+(k==='X'?'<i>—</i>':k)+'</td><td>'+(k==='X'?'⏳':(u===k?'✅':'❌'))+'</td></tr>';
+  });
+
+  // PRIORITY 3 — lock this part after checking
+  locked.add(cp); done.add(cp);
+  localStorage.setItem(sk('locked'),JSON.stringify([...locked]));
+  localStorage.setItem(sk('done'),JSON.stringify([...done]));
+
+  // Lock all radio inputs
+  document.querySelectorAll('.opt').forEach(e=>{ e.classList.add('locked'); });
+  document.querySelectorAll('.opt input').forEach(e=>{ e.disabled=true; });
+
+  // Swap Check button to Retry
+  const btns = document.querySelector('.btns');
+  const checkBtn = btns.querySelector('.gbtn');
+  if(checkBtn){ checkBtn.className='bbtn'; checkBtn.textContent='🔄 Retry This Part'; checkBtn.onclick=retryPart; }
+
+  // PRIORITY 2 — coaching after
+  const coachAfter = '<div class="simpleCoach"><b>✅ Part checked</b><span>Look at the wrong questions only. Then move to the next part.</span></div>';
+
+  const box=document.getElementById('partResult');
+  box.style.display='block';
+  box.innerHTML='<div class="score">'+(keyOk?ok+'/'+p.questions.length:'—/'+p.questions.length)+'</div>'+
+    '<b>'+p.name+' checked and locked.</b>'+
+    '<table class="sTable"><thead><tr><th>Q</th><th>You</th><th>Key</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>'+
+    coachAfter+
+    '<div class="afterNext">✅ Part checked. '+(cp<parts().length-1?'Continue to the next part when ready.':'You have completed all parts. View final summary.')+'<br><button class="ybtn" onclick="nextPart()">'+(cp<parts().length-1?'Continue to '+parts()[cp+1].name+' →':'View Final Summary →')+'</button></div>';
+  renderSteps();
+}
+
+// PRIORITY 3 — Retry clears lock and answers for this part
+function retryPart(){
+  if(!confirm('Clear your answers for '+parts()[cp].name+' and try again?')) return;
+  locked.delete(cp); done.delete(cp);
+  localStorage.setItem(sk('locked'),JSON.stringify([...locked]));
+  localStorage.setItem(sk('done'),JSON.stringify([...done]));
+  parts()[cp].questions.forEach(q=>localStorage.removeItem(sk('q_'+q.q)));
+  renderSwitcher(); renderPart();
+}
+
+function goPart(i){ cp=i; localStorage.setItem(sk('part'),i); renderPart(); }
+function nextPart(){ if(cp<parts().length-1) goPart(cp+1); else finalSummary(); }
+function prevPart(){ if(cp>0) goPart(cp-1); }
+
+/* ================================================================
+   PRIORITY 1 — FINAL SUMMARY with score by part
+   ================================================================ */
+function finalSummary(){
+  const km=keyMap(), keyOk=sess().answerKey.indexOf('X')===-1;
+  let grandTotal=0, grandAns=0, rows='';
+  const partScores=[];
+
+  parts().forEach((p,pi)=>{
+    let pOk=0;
+    p.questions.forEach(q=>{
+      const u=localStorage.getItem(sk('q_'+q.q))||'-', k=km[q.q];
+      if(u!=='-') grandAns++;
+      if(u===k&&k!=='X'){ grandTotal++; pOk++; }
+      rows+='<tr><td>'+q.q+'</td><td>'+u+'</td><td>'+(k==='X'?'<i>—</i>':k)+'</td><td>'+(k==='X'?'⏳':(u===k?'✅':'❌'))+'</td></tr>';
+    });
+    partScores.push({name:p.name, ok:pOk, total:p.questions.length});
+  });
+
+  // Score cards per part
+  const breakdown = partScores.map(ps=>{
+    const pct = ps.total > 0 ? ps.ok/ps.total : 0;
+    const cls = pct >= 0.7 ? 'good' : pct >= 0.4 ? 'mid' : 'low';
+    return '<div class="pb-card"><div class="pb-part">'+ps.name+'</div>'+
+      '<div class="pb-score '+cls+'">'+ps.ok+'/'+ps.total+'</div>'+
+      '<div class="pb-label">'+(pct>=0.7?'Strong 💪':pct>=0.4?'Review 📖':'Focus Here ⚠️')+'</div></div>';
+  }).join('');
+
+  // Best and weakest part
+  const sorted = [...partScores].filter(p=>p.total>0).sort((a,b)=>(b.ok/b.total)-(a.ok/a.total));
+  const best = sorted[0], worst = sorted[sorted.length-1];
+  const bestCoach = COACHING[sid][best.name==='Part V'?'Part V':best.name];
+  const worstCoach = COACHING[sid][worst.name==='Part V'?'Part V':worst.name];
+
+  const insight = keyOk && grandAns > 0 ? (
+    '<div class="strongest">🏆 <b>Strongest: '+best.name+'</b> ('+best.ok+'/'+best.total+')<br>Keep it up — this is your solid section.</div>'+
+    '<div class="improve">⚠️ <b>Focus next: '+worst.name+'</b> ('+worst.ok+'/'+worst.total+')<br>'+(worstCoach?worstCoach.after.replace('<b>💡 Why students miss this:</b> ',''):'Replay this part and listen more carefully.')+'</div>'
+  ) : '';
+
+  document.getElementById('app').innerHTML=
+    '<div class="card"><h2 style="color:var(--yellow);margin-top:0">📊 Final Summary — 🎧 MUET Smart Listening · '+sess().title+'</h2>'+
+    '<div class="score">'+(keyOk?grandTotal+'/30':'—/30')+'</div>'+
+    '<p style="color:var(--muted);font-size:13px;margin:0 0 10px">Answered: '+grandAns+'/30 · Suggested target for tomorrow: 20+/30</p>'+
+    '<div class="part-breakdown">'+breakdown+'</div>'+
+    insight+
+    '<details style="margin-top:12px"><summary style="cursor:pointer;color:var(--muted);font-size:12px;padding:6px 0">▶ View full question-by-question breakdown</summary>'+
+    '<table class="sTable"><thead><tr><th>Q</th><th>You</th><th>Key</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></details>'+
+    '<div class="btns"><button class="ybtn" onclick="goPart(0)">↩ Back to Part I</button><button class="homeBtn" onclick="backHome()">⌂ Sessions</button><button class="rbtn" onclick="resetSess()">Reset All</button></div></div>';
+}
+
+function resetSess(){
+  if(!confirm('Reset all answers for '+sess().title+'?')) return;
+  Object.keys(localStorage).filter(k=>k.startsWith('muet_'+sid+'_')).forEach(k=>localStorage.removeItem(k));
+  cp=0; done.clear(); locked.clear(); renderSwitcher(); renderPart();
+}
+
+/* ================================================================
+   INIT
+   ================================================================ */
+window.addEventListener('DOMContentLoaded',()=>{
+  loadState(); updatePlayer(); setMode(); renderSwitcher();
+  if(screen === 'practice') renderPart();
+  else document.getElementById('app').innerHTML = '';
+  document.getElementById('audio').addEventListener('error',()=>{
+    const st=document.getElementById('audioStatus');
+    st.textContent='⚠️ Audio not found — keep MP3 in the same folder.';
+    st.style.color='#fca5a5';
+    if(!expanded) toggleExpand();
+  });
+});
+</script>
+</body></html>
